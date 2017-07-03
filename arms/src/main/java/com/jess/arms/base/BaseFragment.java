@@ -6,73 +6,51 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.jess.arms.mvp.BasePresenter;
-import com.trello.rxlifecycle.components.support.RxFragment;
-
-import org.simple.eventbus.EventBus;
+import com.jess.arms.base.delegate.IFragment;
+import com.jess.arms.mvp.IPresenter;
+import com.trello.rxlifecycle2.components.support.RxFragment;
 
 import javax.inject.Inject;
 
-import butterknife.ButterKnife;
-
 /**
- * Created by jess on 2015/12/8.
+ * 因为java只能单继承,所以如果有需要继承特定Fragment的三方库,那你就需要自己自定义Fragment
+ * 继承于这个特定的Fragment,然后按照将BaseFragment的格式,复制过去,记住一定要实现{@link IFragment}
  */
-public abstract class BaseFragment<P extends BasePresenter> extends RxFragment {
-    protected BaseActivity mActivity;
-    protected View mRootView;
+public abstract class BaseFragment<P extends IPresenter> extends RxFragment implements IFragment {
     protected final String TAG = this.getClass().getSimpleName();
     @Inject
     protected P mPresenter;
 
+
+    public BaseFragment() {
+        //必须确保在Fragment实例化时setArguments()
+        setArguments(new Bundle());
+    }
+
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-        mRootView = initView();
-        ButterKnife.bind(this, mRootView);//绑定到butterknife
-        return mRootView;
+        return initView(inflater, container, savedInstanceState);
     }
 
-    @Override
-    public void onActivityCreated(@Nullable Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
-        mActivity = (BaseActivity) getActivity();
-        EventBus.getDefault().register(this);//注册到事件主线
-        ComponentInject();
-        initData();
-    }
-
-    /**
-     * 依赖注入的入口
-     */
-    protected abstract void ComponentInject();
-
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        ButterKnife.unbind(this);
-    }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
         if (mPresenter != null) mPresenter.onDestroy();//释放资源
-        EventBus.getDefault().unregister(this);
+        this.mPresenter = null;
     }
 
 
-    protected abstract View initView();
-
-    protected abstract void initData();
-
-
-    public void setData(Object data) {
-
-    }
-
-    public void setData() {
-
+    /**
+     * 是否使用eventBus,默认为使用(true)，
+     *
+     * @return
+     */
+    @Override
+    public boolean useEventBus() {
+        return true;
     }
 
 }

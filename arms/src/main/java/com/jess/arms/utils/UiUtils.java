@@ -2,12 +2,12 @@ package com.jess.arms.utils;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.drawable.Drawable;
-import android.os.Bundle;
-import android.support.v7.app.AlertDialog;
+import android.os.Message;
+import android.support.v7.widget.DefaultItemAnimator;
+import android.support.v7.widget.RecyclerView;
 import android.text.SpannableString;
 import android.text.Spanned;
 import android.text.SpannedString;
@@ -19,10 +19,15 @@ import android.view.WindowManager;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.jess.arms.base.BaseActivity;
-import com.jess.arms.base.BaseApplication;
+import org.simple.eventbus.EventBus;
 
 import java.security.MessageDigest;
+
+import static com.jess.arms.integration.AppManager.APPMANAGER_MESSAGE;
+import static com.jess.arms.integration.AppManager.APP_EXIT;
+import static com.jess.arms.integration.AppManager.KILL_ALL;
+import static com.jess.arms.integration.AppManager.SHOW_SNACKBAR;
+import static com.jess.arms.integration.AppManager.START_ACTIVITY;
 
 /**
  * Created by jess on 2015/11/23.
@@ -30,14 +35,19 @@ import java.security.MessageDigest;
 public class UiUtils {
     static public Toast mToast;
 
+
+    private UiUtils() {
+    }
+
     /**
      * 设置hint大小
+     *
      * @param size
      * @param v
      * @param res
      */
-    public static void setViewHintSize(int size, TextView v, int res){
-        SpannableString ss = new SpannableString(getResources().getString(
+    public static void setViewHintSize(Context context, int size, TextView v, int res) {
+        SpannableString ss = new SpannableString(getResources(context).getString(
                 res));
         // 新建一个属性对象,设置文字的大小
         AbsoluteSizeSpan ass = new AbsoluteSizeSpan(size, true);
@@ -47,7 +57,7 @@ public class UiUtils {
         // 设置hint  
         v.setHint(new SpannedString(ss)); // 一定要进行转换,否则属性会消失
     }
-    
+
 
     /**
      * dip转pix
@@ -55,40 +65,31 @@ public class UiUtils {
      * @param dpValue
      * @return
      */
-    public static int dip2px(float dpValue) {
-        final float scale = BaseApplication.getContext().getResources().getDisplayMetrics().density;
+    public static int dip2px(Context context, float dpValue) {
+        final float scale = getResources(context).getDisplayMetrics().density;
         return (int) (dpValue * scale + 0.5f);
     }
 
     /**
      * 获得资源
      */
-    public static Resources getResources() {
-        return BaseApplication.getContext().getResources();
+    public static Resources getResources(Context context) {
+        return context.getResources();
     }
 
     /**
      * 得到字符数组
      */
-    public static String[] getStringArray(int id) {
-        return getResources().getStringArray(id);
+    public static String[] getStringArray(Context context, int id) {
+        return getResources(context).getStringArray(id);
     }
 
     /**
      * pix转dip
      */
-    public static int pix2dip(int pix) {
-        final float densityDpi = getResources().getDisplayMetrics().density;
+    public static int pix2dip(Context context, int pix) {
+        final float densityDpi = getResources(context).getDisplayMetrics().density;
         return (int) (pix / densityDpi + 0.5f);
-    }
-
-    /**
-     * 获得上下文
-     *
-     * @return
-     */
-    public static Context getContext() {
-        return BaseApplication.getContext();
     }
 
 
@@ -99,8 +100,8 @@ public class UiUtils {
      * @return
      */
 
-    public static int getDimens(int homePicHeight) {
-        return (int) getResources().getDimension(homePicHeight);
+    public static int getDimens(Context context, int homePicHeight) {
+        return (int) getResources(context).getDimension(homePicHeight);
     }
 
     /**
@@ -110,8 +111,8 @@ public class UiUtils {
      * @return
      */
 
-    public static float getDimens(String dimenNmae) {
-        return getResources().getDimension(getResources().getIdentifier(dimenNmae, "dimen", getContext().getPackageName()));
+    public static float getDimens(Context context, String dimenNmae) {
+        return getResources(context).getDimension(getResources(context).getIdentifier(dimenNmae, "dimen", context.getPackageName()));
     }
 
     /**
@@ -120,8 +121,8 @@ public class UiUtils {
      * @return
      */
 
-    public static String getString(int stringID) {
-        return getResources().getString(stringID);
+    public static String getString(Context context, int stringID) {
+        return getResources(context).getString(stringID);
     }
 
     /**
@@ -130,8 +131,8 @@ public class UiUtils {
      * @return
      */
 
-    public static String getString(String strName) {
-        return getString(getResources().getIdentifier(strName, "string", getContext().getPackageName()));
+    public static String getString(Context context, String strName) {
+        return getString(context, getResources(context).getIdentifier(strName, "string", context.getPackageName()));
     }
 
     /**
@@ -142,8 +143,8 @@ public class UiUtils {
      * @param <T>
      * @return
      */
-    public static <T extends View> T findViewByName(View view, String viewName) {
-        int id = getResources().getIdentifier(viewName, "id", getContext().getPackageName());
+    public static <T extends View> T findViewByName(Context context, View view, String viewName) {
+        int id = getResources(context).getIdentifier(viewName, "id", context.getPackageName());
         T v = (T) view.findViewById(id);
         return v;
     }
@@ -156,8 +157,8 @@ public class UiUtils {
      * @param <T>
      * @return
      */
-    public static <T extends View> T findViewByName(Activity activity, String viewName) {
-        int id = getResources().getIdentifier(viewName, "id", getContext().getPackageName());
+    public static <T extends View> T findViewByName(Context context, Activity activity, String viewName) {
+        int id = getResources(context).getIdentifier(viewName, "id", context.getPackageName());
         T v = (T) activity.findViewById(id);
         return v;
     }
@@ -168,8 +169,8 @@ public class UiUtils {
      * @param layoutName
      * @return
      */
-    public static int findLayout(String layoutName) {
-        int id = getResources().getIdentifier(layoutName, "layout", getContext().getPackageName());
+    public static int findLayout(Context context, String layoutName) {
+        int id = getResources(context).getIdentifier(layoutName, "layout", context.getPackageName());
         return id;
     }
 
@@ -179,8 +180,8 @@ public class UiUtils {
      * @param detailScreen
      * @return
      */
-    public static View inflate(int detailScreen) {
-        return View.inflate(getContext(), detailScreen, null);
+    public static View inflate(Context context, int detailScreen) {
+        return View.inflate(context, detailScreen, null);
     }
 
     /**
@@ -189,9 +190,9 @@ public class UiUtils {
      * @param string
      */
 
-    public static void makeText(String string) {
+    public static void makeText(Context context, String string) {
         if (mToast == null) {
-            mToast = Toast.makeText(getContext(), string, Toast.LENGTH_SHORT);
+            mToast = Toast.makeText(context, string, Toast.LENGTH_SHORT);
         }
         mToast.setText(string);
         mToast.show();
@@ -202,12 +203,12 @@ public class UiUtils {
      *
      * @param text
      */
-    public static void SnackbarText(String text) {
-        Intent intent = new Intent(BaseActivity.ACTION_RECEIVER_ACTIVITY);
-        intent.putExtra("type", "showSnackbar");
-        intent.putExtra("content", text);
-        intent.putExtra("long", false);
-        getContext().sendBroadcast(intent);
+    public static void snackbarText(String text) {
+        Message message = new Message();
+        message.what = SHOW_SNACKBAR;
+        message.obj = text;
+        message.arg1 = 0;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
     }
 
     /**
@@ -215,12 +216,12 @@ public class UiUtils {
      *
      * @param text
      */
-    public static void SnackbarTextWithLong(String text) {
-        Intent intent = new Intent(BaseActivity.ACTION_RECEIVER_ACTIVITY);
-        intent.putExtra("type", "showSnackbar");
-        intent.putExtra("content", text);
-        intent.putExtra("long", true);
-        getContext().sendBroadcast(intent);
+    public static void snackbarTextWithLong(String text) {
+        Message message = new Message();
+        message.what = SHOW_SNACKBAR;
+        message.obj = text;
+        message.arg1 = 1;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
     }
 
 
@@ -230,8 +231,8 @@ public class UiUtils {
      * @param rID
      * @return
      */
-    public static Drawable getDrawablebyResource(int rID) {
-        return getResources().getDrawable(rID);
+    public static Drawable getDrawablebyResource(Context context, int rID) {
+        return getResources(context).getDrawable(rID);
     }
 
     /**
@@ -241,7 +242,7 @@ public class UiUtils {
      * @param homeActivityClass
      */
     public static void startActivity(Activity activity, Class homeActivityClass) {
-        Intent intent = new Intent(getContext(), homeActivityClass);
+        Intent intent = new Intent(activity.getApplicationContext(), homeActivityClass);
         activity.startActivity(intent);
     }
 
@@ -252,8 +253,10 @@ public class UiUtils {
      * @param homeActivityClass
      */
     public static void startActivity(Class homeActivityClass) {
-        Intent intent = new Intent(getContext(), homeActivityClass);
-        startActivity(intent);
+        Message message = new Message();
+        message.what = START_ACTIVITY;
+        message.obj = homeActivityClass;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
     }
 
     /**
@@ -262,12 +265,10 @@ public class UiUtils {
      * @param
      */
     public static void startActivity(Intent content) {
-        Intent intent = new Intent(BaseActivity.ACTION_RECEIVER_ACTIVITY);
-        intent.putExtra("type", "startActivity");
-        Bundle bundle = new Bundle();
-        bundle.putParcelable("content", content);
-        intent.putExtras(bundle);
-        getContext().sendBroadcast(intent);
+        Message message = new Message();
+        message.what = START_ACTIVITY;
+        message.obj = content;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
     }
 
     /**
@@ -279,8 +280,8 @@ public class UiUtils {
         activity.startActivity(intent);
     }
 
-    public static int getLayoutId(String layoutName) {
-        return getResources().getIdentifier(layoutName, "layout", getContext().getPackageName());
+    public static int getLayoutId(Context context, String layoutName) {
+        return getResources(context).getIdentifier(layoutName, "layout", context.getPackageName());
     }
 
     /**
@@ -288,8 +289,8 @@ public class UiUtils {
      *
      * @return
      */
-    public static int getScreenWidth() {
-        return getResources().getDisplayMetrics().widthPixels;
+    public static int getScreenWidth(Context context) {
+        return getResources(context).getDisplayMetrics().widthPixels;
     }
 
     /**
@@ -297,51 +298,23 @@ public class UiUtils {
      *
      * @return
      */
-    public static int getScreenHeidth() {
-        return getResources().getDisplayMetrics().heightPixels;
+    public static int getScreenHeidth(Context context) {
+        return getResources(context).getDisplayMetrics().heightPixels;
     }
 
 
     /**
-     * 显示对话框提示
-     *
-     * @param text
+     * 获得颜色
      */
-
-    public static void showDialog(String text, Activity activity) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("提示");
-        builder.setNegativeButton("确定", null);
-        builder.setMessage(text);
-        builder.show();
-    }
-
-    /**
-     * 显示对话框提示
-     *
-     * @param text
-     */
-
-    public static void showDialogWithMethod(String text, Activity activity, DialogInterface.OnClickListener listener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-        builder.setTitle("提示");
-        builder.setNegativeButton("确定", listener);
-        builder.setMessage(text);
-        builder.show();
+    public static int getColor(Context context, int rid) {
+        return getResources(context).getColor(rid);
     }
 
     /**
      * 获得颜色
      */
-    public static int getColor(int rid) {
-        return getResources().getColor(rid);
-    }
-
-    /**
-     * 获得颜色
-     */
-    public static int getColor(String colorName) {
-        return getColor(getResources().getIdentifier(colorName, "color", getContext().getPackageName()));
+    public static int getColor(Context context, String colorName) {
+        return getColor(context, getResources(context).getIdentifier(colorName, "color", context.getPackageName()));
     }
 
     /**
@@ -364,18 +337,15 @@ public class UiUtils {
         return false;
     }
 
-    private static int mCount;
-
 
     /**
      * MD5
      *
      * @param string
      * @return
-     *
      * @throws Exception
      */
-    public static String MD5encode(String string) {
+    public static String encodeToMD5(String string) {
         byte[] hash = new byte[0];
         try {
             hash = MessageDigest.getInstance("MD5").digest(
@@ -408,5 +378,31 @@ public class UiUtils {
     }
 
 
+    /**
+     * 配置recycleview
+     *
+     * @param recyclerView
+     * @param layoutManager
+     */
+    public static void configRecycleView(final RecyclerView recyclerView
+            , RecyclerView.LayoutManager layoutManager) {
+        recyclerView.setLayoutManager(layoutManager);
+        //如果可以确定每个item的高度是固定的，设置这个选项可以提高性能
+        recyclerView.setHasFixedSize(true);
+        recyclerView.setItemAnimator(new DefaultItemAnimator());
+    }
+
+
+    public static void killAll() {
+        Message message = new Message();
+        message.what = KILL_ALL;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
+    }
+
+    public static void exitApp() {
+        Message message = new Message();
+        message.what = APP_EXIT;
+        EventBus.getDefault().post(message, APPMANAGER_MESSAGE);
+    }
 
 }

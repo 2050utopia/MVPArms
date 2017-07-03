@@ -35,6 +35,9 @@
 
 
 ################common###############
+
+-keep public class * implements com.jess.arms.integration.ConfigModule
+
  #实体类不参与混淆
 -keep class com.jess.arms.widget.** { *; } #自定义控件不参与混淆
 -keep class * implements android.os.Parcelable {
@@ -48,6 +51,14 @@
     public static <fields>;
 }
 
+-keepclasseswithmembernames class * { # 保持native方法不被混淆
+    native <methods>;
+}
+
+-keepclassmembers enum * {  # 使用enum类型时需要注意避免以下两个方法混淆，因为enum类的特殊性，以下两个方法会被反射调用，
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
 
 
 ################support###############
@@ -245,6 +256,10 @@
 
 -keep class io.victoralbertos.jolyglot.** { *; }
 -keep interface io.victoralbertos.jolyglot.** { *; }
+
+################RxErrorHandler#################
+ -keep class me.jessyan.rxerrorhandler.** { *; }
+ -keep interface me.jessyan.rxerrorhandler.** { *; }
 
 ################Timber#################
 -dontwarn org.jetbrains.annotations.**
